@@ -78,7 +78,6 @@
     <!-- Header -->
     <header class="border-b border-gold/20 bg-cardBg/90 backdrop-blur-md sticky top-0 z-40">
         <div class="max-w-4xl mx-auto px-4 py-5 flex flex-col items-center justify-center text-center">
-            
             <div class="relative group cursor-pointer my-2">
                 <div class="absolute -inset-2 bg-gradient-to-r from-gold/30 via-gold/10 to-gold/30 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
                 
@@ -376,7 +375,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ⚠️ ضَع بيانات Firebase الخاصة بمشروعك هنا من لوحة تحكم فايربيس (Project Settings)
+        // ⚠️ استبدل القيم أدناه ببيانات مشروعك الخاصة من Firebase
         const firebaseConfig = {
   apiKey: "AIzaSyD973Cnf6vd7ajk...",
   authDomain: "blackwolf-salon...",
@@ -555,7 +554,6 @@
             try {
                 const slotLabel = TIME_SLOTS.find(s => s.key === selectedTimeSlot)?.label || selectedTimeSlot;
                 
-                // Save to Firestore
                 const newBookings = {
                     ...currentDateBookings,
                     [selectedTimeSlot]: {
@@ -571,7 +569,6 @@
 
                 closeBookingModal();
 
-                // Show confirmation ticket
                 const ticket = document.getElementById('myBookingTicket');
                 document.getElementById('ticketName').textContent = name;
                 document.getElementById('ticketTime').textContent = `${selectedDate} - الساعة ${slotLabel}`;
@@ -615,7 +612,6 @@
         window.renderAdminBookings = function() {
             const filterDate = document.getElementById('adminFilterDate').value;
             
-            // Re-listen if admin selected a different date
             if (filterDate !== selectedDate) {
                 listenToDateBookings(filterDate);
                 selectedDate = filterDate;
@@ -658,14 +654,20 @@
             });
         };
 
+        // تم تصحيح خطأ بناء دالة الحذف وتحديث المستند هنا
         window.deleteBookingAdmin = async function(date, timeKey) {
-            if (confirm('هل أنت تأكد من إلغاء هذا الموعد؟')) {
-                const updated = { ...currentDateBookings };
-                delete updated[timeKey];
-                if (Object.keys(updated).length === 0) {
-                    await deleteDoc(doc(db, "bookings", date));
-                } else {
-                    await setDoc(doc(docRef = doc(db, "bookings", date)), updated);
+            if (confirm('هل أنت متأكد من إلغاء هذا الموعد؟')) {
+                try {
+                    const updated = { ...currentDateBookings };
+                    delete updated[timeKey];
+                    if (Object.keys(updated).length === 0) {
+                        await deleteDoc(doc(db, "bookings", date));
+                    } else {
+                        await setDoc(doc(db, "bookings", date), updated);
+                    }
+                } catch (error) {
+                    console.error("خطأ أثناء حذف الموعد:", error);
+                    alert("تعذر حذف الموعد، يرجى المحاولة لاحقاً.");
                 }
             }
         };
@@ -706,19 +708,24 @@
 
             if (!newName || !newPhone) return;
 
-            const oldBooking = currentDateBookings[currentEditTimeKey];
-            const updated = { ...currentDateBookings };
-            delete updated[currentEditTimeKey];
+            try {
+                const oldBooking = currentDateBookings[currentEditTimeKey];
+                const updated = { ...currentDateBookings };
+                delete updated[currentEditTimeKey];
 
-            updated[newTimeKey] = {
-                ...oldBooking,
-                name: newName,
-                phone: newPhone,
-                timeLabel: TIME_SLOTS.find(s => s.key === newTimeKey)?.label || newTimeKey
-            };
+                updated[newTimeKey] = {
+                    ...oldBooking,
+                    name: newName,
+                    phone: newPhone,
+                    timeLabel: TIME_SLOTS.find(s => s.key === newTimeKey)?.label || newTimeKey
+                };
 
-            await setDoc(doc(db, "bookings", currentEditDate), updated);
-            closeEditModal();
+                await setDoc(doc(db, "bookings", currentEditDate), updated);
+                closeEditModal();
+            } catch (error) {
+                console.error("خطأ أثناء تعديل الموعد:", error);
+                alert("تعذر حفظ التغييرات، يرجى المحاولة لاحقاً.");
+            }
         };
     </script>
 </body>
