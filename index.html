@@ -376,7 +376,7 @@
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ⚠️ استبدل القيم أدناه ببيانات مشروعك الخاصة من Firebase
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyD973Cnf6vd7ajk...",
   authDomain: "blackwolf-salon...",
   projectId: "blackwolf-salon",
@@ -654,17 +654,21 @@
             });
         };
 
-        // تم تصحيح خطأ بناء دالة الحذف وتحديث المستند هنا
+        // دالة الحذف المصححة والمحدّثة للذاكرة فوراً
         window.deleteBookingAdmin = async function(date, timeKey) {
             if (confirm('هل أنت متأكد من إلغاء هذا الموعد؟')) {
                 try {
-                    const updated = { ...currentDateBookings };
+                    const updated = JSON.parse(JSON.stringify(currentDateBookings));
                     delete updated[timeKey];
+
                     if (Object.keys(updated).length === 0) {
                         await deleteDoc(doc(db, "bookings", date));
+                        currentDateBookings = {};
                     } else {
                         await setDoc(doc(db, "bookings", date), updated);
+                        currentDateBookings = updated;
                     }
+                    renderAdminBookings();
                 } catch (error) {
                     console.error("خطأ أثناء حذف الموعد:", error);
                     alert("تعذر حذف الموعد، يرجى المحاولة لاحقاً.");
@@ -701,6 +705,7 @@
             document.getElementById('editModal').classList.add('hidden');
         };
 
+        // دالة التعديل المصححة مع تحديث الذاكرة والواجهة فوراً
         window.saveBookingEdit = async function() {
             const newName = document.getElementById('editName').value.trim();
             const newPhone = document.getElementById('editPhone').value.trim();
@@ -710,7 +715,8 @@
 
             try {
                 const oldBooking = currentDateBookings[currentEditTimeKey];
-                const updated = { ...currentDateBookings };
+                const updated = JSON.parse(JSON.stringify(currentDateBookings));
+                
                 delete updated[currentEditTimeKey];
 
                 updated[newTimeKey] = {
@@ -721,7 +727,11 @@
                 };
 
                 await setDoc(doc(db, "bookings", currentEditDate), updated);
+                
+                currentDateBookings = updated;
+
                 closeEditModal();
+                renderAdminBookings();
             } catch (error) {
                 console.error("خطأ أثناء تعديل الموعد:", error);
                 alert("تعذر حفظ التغييرات، يرجى المحاولة لاحقاً.");
